@@ -1,0 +1,7 @@
+const CONFIGS = {
+  POSTS_PAGESIZE: 10,
+  COMMENTS_PAGESIZE: 10,
+  SALT_ROUNDS: 12,
+};
+
+export default CONFIGS;
