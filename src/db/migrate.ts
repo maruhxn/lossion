@@ -3,12 +3,7 @@ import { PostgresJsDatabase, drizzle } from "drizzle-orm/postgres-js";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 import postgres from "postgres";
 
-const client = postgres(
-  process.env.NODE_ENV === "production"
-    ? process.env.MAIN_DB_URL!
-    : process.env.DEV_DB_URL!,
-  { max: 1, ssl: "require" }
-);
+const client = postgres(process.env.DEV_DB_URL!, { max: 1 });
 
 export const db: PostgresJsDatabase = drizzle(client);
 

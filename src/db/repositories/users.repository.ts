@@ -1,22 +1,36 @@
 import { db } from "@/configs/db";
-import { User, user } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { user } from "@/db/schema";
+import { CreateUserDto } from "@/libs/validators/users.validator";
+import { and, eq } from "drizzle-orm";
+import { ulid } from "ulid";
 
-/**
- * 유저가 있다면, 해당 유저로, 없다면 새롭게 생성
- * @param userDto
- * @returns resultUser
- */
-export const getOrCreateUser = async (userDto: User) => {
-  const { id, ip, nickname, agent } = userDto;
-  let resultUser: User;
-  resultUser = (await db.select().from(user).where(eq(user.id, id)))[0];
+type ProviderEnum = "google" | "kakao" | "naver";
 
-  if (!resultUser) {
-    resultUser = (
-      await db.insert(user).values({ id, agent, nickname, ip }).returning()
-    )[0];
-  }
+export const getUserOnLogin = async (
+  profileId: string,
+  provider: ProviderEnum
+) => {
+  return (
+    await db
+      .select()
+      .from(user)
+      .where(and(eq(user.snsId, profileId), eq(user.provider, provider)))
+  )[0];
+};
 
-  return resultUser;
+export const createUser = async (createUserDto: CreateUserDto) => {
+  const { email, provider, snsId, username } = createUserDto;
+
+  return (
+    await db
+      .insert(user)
+      .values({
+        id: ulid(),
+        email,
+        provider,
+        snsId,
+        username,
+      })
+      .returning()
+  )[0];
 };

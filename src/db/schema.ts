@@ -2,6 +2,7 @@ import { InferModel, relations } from "drizzle-orm";
 import {
   AnyPgColumn,
   boolean,
+  char,
   pgEnum,
   pgTable,
   text,
@@ -9,11 +10,14 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 
+export const providerEnum = pgEnum("provider", ["google", "kakao", "naver"]);
+
 export const user = pgTable("user", {
-  id: varchar("id", { length: 36 }).notNull().primaryKey(),
-  ip: varchar("user_ip", { length: 20 }).notNull(),
-  nickname: varchar("nickname", { length: 10 }).notNull(),
-  agent: varchar("agent", { length: 255 }).notNull(),
+  id: char("id", { length: 26 }).notNull().primaryKey(),
+  username: varchar("username", { length: 20 }).notNull(),
+  email: varchar("email", { length: 50 }).notNull(),
+  snsId: varchar("sns_id", { length: 30 }).notNull(),
+  provider: providerEnum("provider"),
 });
 
 export const userRelations = relations(user, ({ many }) => ({
@@ -23,15 +27,19 @@ export const userRelations = relations(user, ({ many }) => ({
 }));
 
 export const post = pgTable("post", {
-  id: varchar("id", { length: 26 }).primaryKey().notNull(),
+  id: char("id", { length: 26 }).primaryKey().notNull(),
   title: text("title").notNull(),
-  description: text("description").notNull(),
-  authorId: varchar("author_id", { length: 36 }).notNull(),
-  password: varchar("password", { length: 80 }).notNull(),
-  firstChoice: varchar("first_choice", { length: 100 }).notNull(),
-  secondChoice: varchar("second_choice", { length: 100 }).notNull(),
+  content: text("content").notNull(),
+  authorId: char("author_id", { length: 26 })
+    .notNull()
+    .references((): AnyPgColumn => user.id, {
+      onUpdate: "cascade",
+      onDelete: "cascade",
+    }),
+  firstChoice: varchar("first_choice", { length: 255 }).notNull(),
+  secondChoice: varchar("second_choice", { length: 255 }).notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
 export const postRelations = relations(post, ({ one, many }) => ({
@@ -44,16 +52,15 @@ export const postRelations = relations(post, ({ one, many }) => ({
   comments: many(comment),
 }));
 
-export const referenceTypeEnum = pgEnum("reference_type", [
-  "image, link, video",
-]);
-
 export const reference = pgTable("reference", {
   id: varchar("id", { length: 26 }).primaryKey().notNull(),
-  postId: varchar("post_id", { length: 36 }).notNull(),
-  type: referenceTypeEnum("reference_type").notNull(),
-  url: text("reference_url").notNull(),
-  annotation: text("annotation"),
+  postId: char("post_id", { length: 26 })
+    .notNull()
+    .references((): AnyPgColumn => post.id, {
+      onUpdate: "cascade",
+      onDelete: "cascade",
+    }),
+  imagePath: text("image_path").notNull(),
 });
 
 export const referenceRelations = relations(reference, ({ one }) => ({
@@ -64,27 +71,34 @@ export const referenceRelations = relations(reference, ({ one }) => ({
 }));
 
 export const comment = pgTable("comment", {
-  id: varchar("id", { length: 26 }).primaryKey().notNull(),
-  userId: varchar("user_id", { length: 36 }).notNull(),
-  postId: varchar("post_id", { length: 36 }).notNull(),
+  id: char("id", { length: 26 }).primaryKey().notNull(),
+  userId: char("user_id", { length: 26 })
+    .notNull()
+    .references((): AnyPgColumn => user.id, {
+      onUpdate: "cascade",
+      onDelete: "cascade",
+    }),
+  postId: char("post_id", { length: 26 })
+    .notNull()
+    .references((): AnyPgColumn => post.id, {
+      onUpdate: "cascade",
+      onDelete: "cascade",
+    }),
   content: text("content").notNull(),
-  password: varchar("password", { length: 80 }).notNull(),
+  isFirstChoice: boolean("is_first_choice"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-  replyToId: varchar("reply_to_id", { length: 36 }).references(
-    (): AnyPgColumn => comment.id
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  replyToId: char("reply_to_id", { length: 26 }).references(
+    (): AnyPgColumn => comment.id,
+    { onUpdate: "cascade", onDelete: "cascade" }
   ),
 });
 
-export const replyRelations = relations(comment, ({ one, many }) => ({
-  topLevelComment: one(comment, {
-    fields: [comment.replyToId],
-    references: [comment.id],
-    relationName: "replyRelations",
-  }),
+export const replyRelations = relations(comment, ({ many }) => ({
   replies: many(comment, { relationName: "replyRelations" }),
 }));
 
-export const commentRelations = relations(comment, ({ one, many }) => ({
+export const commentRelations = relations(comment, ({ one }) => ({
   user: one(user, {
     fields: [comment.userId],
     references: [user.id],
@@ -93,13 +107,28 @@ export const commentRelations = relations(comment, ({ one, many }) => ({
     fields: [comment.postId],
     references: [post.id],
   }),
+  topLevelComment: one(comment, {
+    fields: [comment.replyToId],
+    references: [comment.id],
+    relationName: "replyRelations",
+  }),
 }));
 
 export const vote = pgTable("vote", {
-  id: varchar("id", { length: 26 }).primaryKey().notNull(),
-  userId: varchar("user_id", { length: 36 }).notNull(),
-  postId: varchar("post_id", { length: 36 }).notNull(),
-  isFirst: boolean("is_fisrt"),
+  id: char("id", { length: 26 }).primaryKey().notNull(),
+  userId: char("user_id", { length: 26 })
+    .notNull()
+    .references((): AnyPgColumn => user.id, {
+      onUpdate: "cascade",
+      onDelete: "cascade",
+    }),
+  postId: char("post_id", { length: 26 })
+    .notNull()
+    .references((): AnyPgColumn => post.id, {
+      onUpdate: "cascade",
+      onDelete: "cascade",
+    }),
+  isFirstChoice: boolean("is_first_choice"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

@@ -4,39 +4,39 @@ import { and, eq } from "drizzle-orm";
 import { ulid } from "ulid";
 import { vote } from "../schema";
 
-export const getOneVoteById = async (authorId: string, postId: string) => {
+export const getOneVoteById = async (userId: string, postId: string) => {
   return await db.query.vote.findFirst({
-    where: and(eq(vote.userId, authorId), eq(vote.postId, postId)),
+    where: and(eq(vote.userId, userId), eq(vote.postId, postId)),
   });
 };
 
 export const createVote = async (
-  authorId: string,
+  userId: string,
   postId: string,
   createVoteDto: CreateVoteDto
 ) => {
-  const { isFirst } = createVoteDto;
+  const { isFirstChoice } = createVoteDto;
   await db.insert(vote).values({
     id: ulid(),
     postId,
-    userId: authorId,
-    isFirst,
+    userId,
+    isFirstChoice,
   });
 };
 
 export const updateVote = async (
-  authorId: string,
+  userId: string,
   postId: string,
-  isFirst: boolean
+  isFirstChoice: boolean
 ) => {
   await db
     .update(vote)
-    .set({ isFirst })
-    .where(and(eq(vote.userId, authorId), eq(vote.postId, postId)));
+    .set({ isFirstChoice })
+    .where(and(eq(vote.userId, userId), eq(vote.postId, postId)));
 };
 
-export const deleteVote = async (authorId: string, postId: string) => {
+export const deleteVote = async (userId: string, postId: string) => {
   await db
     .delete(vote)
-    .where(and(eq(vote.userId, authorId), eq(vote.postId, postId)));
+    .where(and(eq(vote.userId, userId), eq(vote.postId, postId)));
 };

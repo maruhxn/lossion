@@ -2,19 +2,16 @@ import { z } from "zod";
 
 export const CreatePostValidator = z.object({
   title: z.string(),
-  description: z.string(),
-  password: z.string(),
-  firstChoice: z.string().min(1).max(100),
-  secondChoice: z.string().min(1).max(100),
+  content: z.string(),
+  firstChoice: z.string().min(1).max(255),
+  secondChoice: z.string().min(1).max(255),
 });
 
 export const UpdatePostValidator = z.object({
   title: z.string().optional(),
-  description: z.string().optional(),
-  password: z.string(),
-  updatedPassword: z.string().optional(),
-  firstChoice: z.string().min(1).max(100).optional(),
-  secondChoice: z.string().min(1).max(100).optional(),
+  content: z.string().optional(),
+  firstChoice: z.string().min(1).max(255).optional(),
+  secondChoice: z.string().min(1).max(255).optional(),
 });
 
 export type CreatePostDto = z.infer<typeof CreatePostValidator>;

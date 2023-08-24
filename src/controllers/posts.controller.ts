@@ -1,7 +1,5 @@
 import CONFIGS from "@/configs/config";
 import * as postsRepository from "@/db/repositories/posts.repository";
-import * as usersRepository from "@/db/repositories/users.repository";
-import { User } from "@/db/schema";
 import HttpException from "@/libs/http-exception";
 import {
   CreatePostDto,
@@ -9,18 +7,21 @@ import {
   UpdatePostDto,
   UpdatePostValidator,
 } from "@/libs/validators/posts.validator";
-import { UserValidator } from "@/libs/validators/users.validator";
-import bcrypt from "bcrypt";
 import { Request, Response } from "express";
 
 /* GET /api/posts?page={number} */
 export const getAllPosts = async (req: Request, res: Response) => {
-  const { page = 1 } = req.query;
+  const { page = 1, sortQuery = "popular" } = req.query;
   /* @ts-ignore */
   if (isNaN(page)) throw new HttpException("올바르지 않은 쿼리입니다.", 400);
+  if (Array.isArray(sortQuery))
+    throw new HttpException("정렬 기준을 1개만 입력해주세요.", 400);
   const skipPage = (+page - 1) * CONFIGS.POSTS_PAGESIZE;
 
-  const posts = await postsRepository.getAllPosts(skipPage);
+  const posts = await postsRepository.getAllPosts(
+    skipPage,
+    sortQuery as string
+  );
 
   return res.status(200).json({
     ok: true,
@@ -31,12 +32,9 @@ export const getAllPosts = async (req: Request, res: Response) => {
 
 /* POST /api/posts */
 export const createPost = async (req: Request, res: Response) => {
-  const userDto = UserValidator.parse(req.body.user);
   const createPostDto: CreatePostDto = CreatePostValidator.parse(req.body);
 
-  const author: User = await usersRepository.getOrCreateUser(userDto);
-
-  await postsRepository.createPost(author, createPostDto);
+  await postsRepository.createPost(req.user?.userId as string, createPostDto);
 
   return res.status(201).json({
     ok: true,
@@ -69,8 +67,8 @@ export const updatePost = async (req: Request, res: Response) => {
 
   if (!exPost) throw new HttpException("게시글 정보가 없습니다.", 404);
 
-  if (!(await bcrypt.compare(updatePostDto.password, exPost.password)))
-    throw new HttpException("비밀번호가 일치하지 않습니다.", 400);
+  if (exPost.authorId !== req.user?.userId)
+    throw new HttpException("권한이 없습니다.", 403);
 
   await postsRepository.updatePost(postId, updatePostDto);
 
@@ -80,14 +78,13 @@ export const updatePost = async (req: Request, res: Response) => {
 /* PUT /api/posts/:postId */
 export const deletePost = async (req: Request, res: Response) => {
   const { postId } = req.params;
-  const { password } = req.body;
 
   const exPost = await postsRepository.getOnePostById(postId);
 
   if (!exPost) throw new HttpException("게시글 정보가 없습니다.", 404);
 
-  if (!(await bcrypt.compare(password, exPost.password)))
-    throw new HttpException("비밀번호가 일치하지 않습니다.", 400);
+  if (exPost.authorId !== req.user?.userId)
+    throw new HttpException("권한이 없습니다.", 403);
 
   await postsRepository.deleteOnePost(postId);
 

@@ -1,8 +1,7 @@
 import {
   createComment,
   deleteComment,
-  getOneComment,
-  getTopLevelComments,
+  getAllComments,
   updateComment,
 } from "@/controllers/comments.controller";
 import {
@@ -12,31 +11,31 @@ import {
   getPostDetail,
   updatePost,
 } from "@/controllers/posts.controller";
-import { vote } from "@/controllers/votes.controller";
 import catchAsync from "@/libs/catch-async";
+import { AuthJWT } from "@/middlewares/auth.guard";
 import express from "express";
 
 const router = express.Router();
 
-router.route("/").get(catchAsync(getAllPosts)).post(catchAsync(createPost));
+router
+  .route("/")
+  .get(catchAsync(getAllPosts))
+  .post(AuthJWT, catchAsync(createPost));
 
 router
   .route("/:postId")
   .get(catchAsync(getPostDetail))
-  .patch(catchAsync(updatePost))
-  .put(catchAsync(deletePost));
+  .patch(AuthJWT, catchAsync(updatePost))
+  .delete(AuthJWT, catchAsync(deletePost));
 
 router
   .route("/:postId/comments")
-  .get(catchAsync(getTopLevelComments))
-  .post(catchAsync(createComment));
+  .get(catchAsync(getAllComments))
+  .post(AuthJWT, catchAsync(createComment));
 
 router
   .route("/:postId/comments/:commentId")
-  .get(catchAsync(getOneComment))
-  .patch(catchAsync(updateComment))
-  .put(catchAsync(deleteComment));
-
-router.route("/:postId/votes").put(catchAsync(vote));
+  .patch(AuthJWT, catchAsync(updateComment))
+  .put(AuthJWT, catchAsync(deleteComment));
 
 export default router;

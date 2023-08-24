@@ -30,10 +30,10 @@ const ErrorFilter = (
       msg: err.message,
     });
   } else {
-    return res.status(422).json({
+    return res.status(500).json({
       ok: false,
-      status: 422,
-      msg: "잘못된 접근입니다.",
+      status: 500,
+      msg: "서버 오류입니다. 잠시 후에 다시 시도해주세요.",
     });
   }
 };

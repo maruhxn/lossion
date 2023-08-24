@@ -1,7 +1,7 @@
 {
   "version": "5",
   "dialect": "pg",
-  "id": "67e26119-9f57-4385-b312-682f7ad5fefa",
+  "id": "7f5e3dae-eb14-474c-aa53-06459adb4c9d",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "comment": {
@@ -10,19 +10,19 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "varchar(26)",
+          "type": "char(26)",
           "primaryKey": true,
           "notNull": true
         },
         "user_id": {
           "name": "user_id",
-          "type": "varchar(36)",
+          "type": "char(36)",
           "primaryKey": false,
           "notNull": true
         },
         "post_id": {
           "name": "post_id",
-          "type": "varchar(36)",
+          "type": "char(36)",
           "primaryKey": false,
           "notNull": true
         },
@@ -32,11 +32,11 @@
           "primaryKey": false,
           "notNull": true
         },
-        "password": {
-          "name": "password",
-          "type": "varchar(80)",
+        "is_first_choice": {
+          "name": "is_first_choice",
+          "type": "boolean",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "created_at": {
           "name": "created_at",
@@ -45,15 +45,36 @@
           "notNull": true,
           "default": "now()"
         },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
         "reply_to_id": {
           "name": "reply_to_id",
-          "type": "varchar(36)",
+          "type": "char(36)",
           "primaryKey": false,
           "notNull": false
         }
       },
       "indexes": {},
-      "foreignKeys": {},
+      "foreignKeys": {
+        "comment_reply_to_id_comment_id_fk": {
+          "name": "comment_reply_to_id_comment_id_fk",
+          "tableFrom": "comment",
+          "tableTo": "comment",
+          "columnsFrom": [
+            "reply_to_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     },
@@ -63,7 +84,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "varchar(26)",
+          "type": "char(26)",
           "primaryKey": true,
           "notNull": true
         },
@@ -73,33 +94,27 @@
           "primaryKey": false,
           "notNull": true
         },
-        "description": {
-          "name": "description",
+        "content": {
+          "name": "content",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
         "author_id": {
           "name": "author_id",
-          "type": "varchar(36)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "password": {
-          "name": "password",
-          "type": "varchar(80)",
+          "type": "char(36)",
           "primaryKey": false,
           "notNull": true
         },
         "first_choice": {
           "name": "first_choice",
-          "type": "varchar(100)",
+          "type": "varchar(255)",
           "primaryKey": false,
           "notNull": true
         },
         "second_choice": {
           "name": "second_choice",
-          "type": "varchar(100)",
+          "type": "varchar(255)",
           "primaryKey": false,
           "notNull": true
         },
@@ -114,7 +129,8 @@
           "name": "updated_at",
           "type": "timestamp",
           "primaryKey": false,
-          "notNull": true
+          "notNull": true,
+          "default": "now()"
         }
       },
       "indexes": {},
@@ -128,33 +144,21 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "varchar(26)",
+          "type": "varchar(36)",
           "primaryKey": true,
           "notNull": true
         },
         "post_id": {
           "name": "post_id",
-          "type": "varchar(36)",
+          "type": "char(36)",
           "primaryKey": false,
           "notNull": true
         },
-        "reference_type": {
-          "name": "reference_type",
-          "type": "reference_type",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "reference_url": {
-          "name": "reference_url",
+        "image_path": {
+          "name": "image_path",
           "type": "text",
           "primaryKey": false,
           "notNull": true
-        },
-        "annotation": {
-          "name": "annotation",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
         }
       },
       "indexes": {},
@@ -168,27 +172,33 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "varchar(36)",
+          "type": "char(36)",
           "primaryKey": true,
           "notNull": true
         },
-        "user_ip": {
-          "name": "user_ip",
+        "username": {
+          "name": "username",
           "type": "varchar(20)",
           "primaryKey": false,
           "notNull": true
         },
-        "nickname": {
-          "name": "nickname",
-          "type": "varchar(10)",
+        "email": {
+          "name": "email",
+          "type": "varchar(50)",
           "primaryKey": false,
           "notNull": true
         },
-        "agent": {
-          "name": "agent",
-          "type": "varchar(255)",
+        "sns_id": {
+          "name": "sns_id",
+          "type": "varchar(30)",
           "primaryKey": false,
           "notNull": true
+        },
+        "provider": {
+          "name": "provider",
+          "type": "provider",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {},
@@ -202,24 +212,24 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "varchar(26)",
+          "type": "char(36)",
           "primaryKey": true,
           "notNull": true
         },
         "user_id": {
           "name": "user_id",
-          "type": "varchar(36)",
+          "type": "char(36)",
           "primaryKey": false,
           "notNull": true
         },
         "post_id": {
           "name": "post_id",
-          "type": "varchar(36)",
+          "type": "char(36)",
           "primaryKey": false,
           "notNull": true
         },
-        "is_fisrt": {
-          "name": "is_fisrt",
+        "is_first_choice": {
+          "name": "is_first_choice",
           "type": "boolean",
           "primaryKey": false,
           "notNull": false
@@ -239,10 +249,12 @@
     }
   },
   "enums": {
-    "reference_type": {
-      "name": "reference_type",
+    "provider": {
+      "name": "provider",
       "values": {
-        "image, link, video": "image, link, video"
+        "google": "google",
+        "kakao": "kakao",
+        "naver": "naver"
       }
     }
   },

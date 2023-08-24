@@ -1,49 +1,68 @@
-import CONFIGS from "@/configs/config";
 import { db } from "@/configs/db";
 import {
   CreatePostDto,
   UpdatePostDto,
 } from "@/libs/validators/posts.validator";
-import bcrypt from "bcrypt";
-import { eq, sql } from "drizzle-orm";
+import { eq, like, sql } from "drizzle-orm";
 import { ulid } from "ulid";
-import { User, post, vote } from "../schema";
+import { post, vote } from "../schema";
 
-export const getAllPosts = async (skipPage: number) => {
+/** TODO - GET ALL POSTS */
+export const getAllPosts = async (skipPage: number, sortQuery: string) => {
+  // const posts = await db.query.post.findMany({
+  //   extras: {
+  //     voteAmt: sql<number>`count(${vote.id})`.as("vote_amt"),
+  //   },
+  //   with: {
+  //     references: true,
+  //     author: {
+  //       columns: {
+  //         id: true,
+  //         username: true,
+  //       },
+  //     },
+  //     votes: true,
+  //   },
+  //   limit: CONFIGS.POSTS_PAGESIZE,
+  //   offset: skipPage,
+  //   orderBy:
+  //     sortQuery === "popular"
+  //       ? sql`vote_amt DESC`
+  //       : sortQuery === "latest"
+  //       ? desc(post.updatedAt)
+  //       : asc(post.updatedAt),
+  // });
+
   const posts = await db
     .select({
       id: post.id,
       title: post.title,
-      description: post.description,
-      authorId: post.authorId,
+      content: post.content,
       firstChoice: post.firstChoice,
       secondChoice: post.secondChoice,
+      authorId: post.authorId,
       createdAt: post.createdAt,
       updatedAt: post.updatedAt,
-      firstVoteAmt: sql<number>`SUM(CASE WHEN ${vote.isFirst} = true THEN 1 ELSE 0 END)`,
-      secondVoteAmt: sql<number>`SUM(CASE WHEN ${vote.isFirst} = false THEN 1 ELSE 0 END)`,
+      voteAmt: sql<number>`count(${vote.id})`.as("vote_amt"),
     })
     .from(post)
     .leftJoin(vote, eq(post.id, vote.postId))
-    .groupBy(post.id)
-    .limit(CONFIGS.POSTS_PAGESIZE)
-    .offset(skipPage);
+    .groupBy(post.id, post.title)
+    .orderBy(sql`vote_amt DESC`);
   return posts;
 };
 
 export const createPost = async (
-  author: User,
+  authorId: string,
   createPostDto: CreatePostDto
 ) => {
-  const { title, description, password, firstChoice, secondChoice } =
-    createPostDto;
+  const { title, content, firstChoice, secondChoice } = createPostDto;
 
   await db.insert(post).values({
     id: ulid(),
     title,
-    description,
-    authorId: author.id,
-    password: await bcrypt.hash(password, CONFIGS.SALT_ROUNDS),
+    content,
+    authorId,
     firstChoice,
     secondChoice,
     updatedAt: new Date(),
@@ -53,7 +72,7 @@ export const createPost = async (
 export const getOnePostById = async (postId: string) => {
   return (
     await db
-      .select({ id: post.id, password: post.password })
+      .select({ id: post.id, authorId: post.authorId })
       .from(post)
       .where(eq(post.id, postId))
   )[0];
@@ -62,23 +81,17 @@ export const getOnePostById = async (postId: string) => {
 export const getPostDetail = async (postId: string) => {
   const foundedPost = await db.query.post.findFirst({
     where: eq(post.id, postId),
-    columns: {
-      password: false,
-    },
     with: {
-      author: true,
-      comments: {
+      references: true,
+      author: {
         columns: {
           id: true,
-          content: true,
-          createdAt: true,
+          username: true,
         },
-        orderBy: (comments, { desc }) => [desc(comments.createdAt)],
       },
-      references: true,
       votes: {
         columns: {
-          isFirst: true,
+          postId: false,
         },
       },
     },
@@ -91,18 +104,14 @@ export const updatePost = async (
   postId: string,
   updatePostDto: UpdatePostDto
 ) => {
-  const { title, description, updatedPassword, firstChoice, secondChoice } =
-    updatePostDto;
+  const { title, content, firstChoice, secondChoice } = updatePostDto;
   await db
     .update(post)
     .set({
       title,
-      description,
+      content,
       firstChoice,
       secondChoice,
-      password:
-        updatedPassword &&
-        (await bcrypt.hash(updatedPassword, CONFIGS.SALT_ROUNDS)),
       updatedAt: new Date(),
     })
     .where(eq(post.id, postId));
@@ -110,4 +119,15 @@ export const updatePost = async (
 
 export const deleteOnePost = async (postId: string) => {
   await db.delete(post).where(eq(post.id, postId));
+};
+
+export const searchPosts = async (searchQuery: string) => {
+  return await db.query.post.findMany({
+    where: like(post.title, `%${searchQuery}%`),
+    with: {
+      author: true,
+      votes: true,
+      references: true,
+    },
+  });
 };
